@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcryptjs");
+const bcrypt = require('bcrypt');
 const Admin = require("../models/User"); // ✅ Corrected path (you are using User.js)
 
 // ✅ POST /api/admin/register
