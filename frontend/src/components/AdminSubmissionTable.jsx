@@ -53,14 +53,18 @@ const AdminSubmissionsTable = () => {
 
   // Filter submissions by ERP ID and District
   const filteredSubmissions = submissions.filter((sub) => {
-    const matchesErp = sub.erpId
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesDistrict = selectedDistrict
-      ? sub.district === selectedDistrict
-      : true;
-    return matchesErp && matchesDistrict;
-  });
+  if (!sub) return false;
+
+  const matchesErp = (sub.erpId || "")
+    .toLowerCase()
+    .includes(searchTerm.toLowerCase());
+
+  const matchesDistrict = selectedDistrict
+    ? sub.district === selectedDistrict
+    : true;
+
+  return matchesErp && matchesDistrict;
+});
 
   const handleDownloadAllImages = async (photos) => {
     if (!photos || photos.length === 0) return;
