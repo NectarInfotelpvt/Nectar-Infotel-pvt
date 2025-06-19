@@ -53,6 +53,9 @@ app.get("/", (req, res) => {
   res.send("✅ Nectar API is running...");
 });
 
+console.log("🔍 MONGO_URI:", process.env.MONGO_URI);
+
+
 // ✅ Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
