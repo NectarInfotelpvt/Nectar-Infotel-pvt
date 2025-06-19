@@ -2,36 +2,23 @@ const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
 require("dotenv").config();
+const cors = require("cors");
 
 const app = express();
 
-/* ✅ CORS Middleware — allow requests from your frontend origin
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-
-  next();
-});*/
-const cors = require("cors");
-
+// ✅ CORS Setup (supports both deployed and local frontend)
+const allowedOrigins = [
+  "https://nectar-infotel-live.onrender.com",
+  "http://localhost:5173"
+];
 
 app.use(cors({
-  origin: "https://nectar-infotel-live.onrender.com", // Your frontend domain
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true // Allow cookies or auth headers if used
+  credentials: true
 }));
 
-
-
-
-
-// ✅ Body parser middleware for JSON (supports large payloads)
+// ✅ Body parser middleware for JSON
 app.use(express.json({ limit: "10mb" }));
 
 // ✅ Import Routes
@@ -40,31 +27,36 @@ const submissionRoutes = require("./routes/submissionRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const adminDataDownloadFilter = require("./routes/adminDataDownloadFilter");
 
-
-
 // ✅ Use Routes with /api prefix
 app.use("/api", authRoutes);
-app.use("/api", submissionRoutes);  // includes /api/erp-submission POST route
+app.use("/api", submissionRoutes);  // includes /api/erp-submission
 app.use("/api", adminRoutes);
 app.use("/api/admin", adminDataDownloadFilter);
 
-// ✅ Root endpoint
+// ✅ Root test route
 app.get("/", (req, res) => {
   res.send("✅ Nectar API is running...");
 });
 
-console.log("🔍 MONGO_URI:", process.env.MONGO_URI);
+// ✅ Optional: Hide MONGO_URI in production logs
+if (process.env.NODE_ENV !== "production") {
+  console.log("🔍 MONGO_URI:", process.env.MONGO_URI);
+}
 
-
-// ✅ Connect to MongoDB and start server
+// ✅ MongoDB connection and server start
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected successfully!");
     const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
   });
+
+// ✅ 404 Fallback for unknown routes
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});

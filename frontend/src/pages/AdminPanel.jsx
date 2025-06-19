@@ -26,7 +26,8 @@ const AdminPanel = () => {
     setBgColor("#e3f2fd");
 
     // Fetch unique districts
-    fetch("http://localhost:5001/api/admin/unique-districts")
+    fetch(    fetch(`${import.meta.env.VITE_API_URL}/api/admin/unique-districts`)
+)
       .then((res) => res.json())
       .then(setDistrictList)
       .catch((err) => console.error("❌ Failed to fetch districts:", err));

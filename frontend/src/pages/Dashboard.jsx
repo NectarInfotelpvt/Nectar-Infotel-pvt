@@ -8,16 +8,17 @@ const Dashboard = () => {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     const API = import.meta.env.VITE_API_URL;
 
     try {
       if (isLogin) {
-        // --- Login Flow ---
         const res = await fetch(`${API}/api/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -25,42 +26,30 @@ const Dashboard = () => {
         });
 
         const data = await res.json();
-        console.log("Dashboard Login API Response Data:", data); // IMPORTANT LOG 1
+        console.log("Login response:", data);
 
         if (!res.ok) {
           alert(data.message || "Login failed");
+          setLoading(false);
           return;
         }
 
         alert("Login successful!");
         localStorage.setItem("erpId", loginId);
 
-        const userType = data.user?.userType;
-        console.log("Dashboard Login - Extracted userType:", userType); // IMPORTANT LOG 2
+        const userType = data?.user?.userType || "user";
+        localStorage.setItem("userRole", userType);
 
-        if (userType) {
-          localStorage.setItem("userRole", userType);
-        } else {
-          // Fallback if userType is not explicitly returned (e.g., default user)
-          localStorage.setItem("userRole", "user");
-          console.warn("Dashboard Login - userType not found, defaulting to 'user'."); // LOG WARNING
-        }
+        console.log("Stored role:", userType);
 
-        const storedUserRole = localStorage.getItem("userRole"); // VERIFY LOCALSTORAGE SET
-        console.log("Dashboard Login - userRole stored in localStorage:", storedUserRole); // IMPORTANT LOG 3
-
-        // Navigate based on role
-        if (storedUserRole === "superadmin") { // Use storedUserRole for consistency
-          navigate("/superadmin");
-        } else if (storedUserRole === "admin") { // Use storedUserRole for consistency
-          navigate("/admin");
-        } else {
-          navigate("/user");
-        }
+        // Redirect
+        if (userType === "superadmin") navigate("/superadmin");
+        else if (userType === "admin") navigate("/admin");
+        else navigate("/user");
       } else {
-        // --- Registration Flow ---
         if (password !== confirmPassword) {
           alert("Passwords do not match!");
+          setLoading(false);
           return;
         }
 
@@ -71,56 +60,40 @@ const Dashboard = () => {
         });
 
         const data = await res.json();
-        console.log("Dashboard Registration API Response Data:", data); // IMPORTANT LOG 4
+        console.log("Register response:", data);
 
         if (!res.ok) {
           alert(data.message || "Registration failed");
+          setLoading(false);
           return;
         }
 
         alert("Registered and logged in successfully!");
         localStorage.setItem("erpId", data.email);
+        const userType = data?.userType || "user";
+        localStorage.setItem("userRole", userType);
 
-        const userType = data.userType;
-        console.log("Dashboard Registration - Extracted userType:", userType); // IMPORTANT LOG 5
-
-        if (userType) {
-          localStorage.setItem("userRole", userType);
-        } else {
-          localStorage.setItem("userRole", "user");
-          console.warn("Dashboard Registration - userType not found, defaulting to 'user'."); // LOG WARNING
-        }
-
-        const storedUserRole = localStorage.getItem("userRole"); // VERIFY LOCALSTORAGE SET
-        console.log("Dashboard Registration - userRole stored in localStorage:", storedUserRole); // IMPORTANT LOG 6
-
-
-        // Navigate based on role
-        if (storedUserRole === "superadmin") { // Use storedUserRole for consistency
-          navigate("/superadmin");
-        } else if (storedUserRole === "admin") { // Use storedUserRole for consistency
-          navigate("/admin");
-        } else {
-          navigate("/user");
-        }
+        if (userType === "superadmin") navigate("/superadmin");
+        else if (userType === "admin") navigate("/admin");
+        else navigate("/user");
       }
 
-      // Clear form fields after successful submission
+      // Clear form
       setName("");
       setLoginId("");
       setPassword("");
       setConfirmPassword("");
     } catch (err) {
-      console.error("API error:", err);
-      alert("Something went wrong. Check console.");
+      console.error("Login/Register error:", err);
+      alert("An error occurred. Please check the console.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ... rest of your Dashboard component (HTML and CSS) ...
   return (
     <div>
       <Navbar />
-
       <div className="welcome-box text-center mb-5">
         <h2 className="fw-bold text-white">Submit ERP ID with Geotag</h2>
         <p className="text-light fs-5">
@@ -144,13 +117,13 @@ const Dashboard = () => {
                 {!isLogin && (
                   <div className="mb-3">
                     <label htmlFor="name" className="form-label text-primary">
-                      Pacs Name
+                      PACS Name
                     </label>
                     <input
                       type="text"
                       id="name"
                       className="form-control"
-                      placeholder="Enter Pacs Name"
+                      placeholder="Enter PACS Name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -160,7 +133,6 @@ const Dashboard = () => {
 
                 <div className="mb-3">
                   <label htmlFor="loginId" className="form-label text-primary">
-                    {" "}
                     PACS ERP ID
                   </label>
                   <input
@@ -191,10 +163,7 @@ const Dashboard = () => {
 
                 {!isLogin && (
                   <div className="mb-4">
-                    <label
-                      htmlFor="confirmPassword"
-                      className="form-label text-primary"
-                    >
+                    <label htmlFor="confirmPassword" className="form-label text-primary">
                       Confirm Password
                     </label>
                     <input
@@ -211,11 +180,10 @@ const Dashboard = () => {
 
                 <button
                   type="submit"
-                  className={`btn w-100 mb-3 ${
-                    isLogin ? "btn-primary" : "btn-info text-white"
-                  }`}
+                  className={`btn w-100 mb-3 ${isLogin ? "btn-primary" : "btn-info text-white"}`}
+                  disabled={loading}
                 >
-                  {isLogin ? "Login" : "Register"}
+                  {loading ? "Processing..." : isLogin ? "Login" : "Register"}
                 </button>
               </form>
 
@@ -236,9 +204,7 @@ const Dashboard = () => {
 
       <footer className="bg-primary text-light text-center py-3 mt-5">
         <div className="container">
-          <small>
-            © {new Date().getFullYear()} Nectar Infotel. All rights reserved.
-          </small>
+          <small>© {new Date().getFullYear()} Nectar Infotel. All rights reserved.</small>
         </div>
       </footer>
 
